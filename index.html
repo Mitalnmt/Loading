@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Exam Tool</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+    button { padding: 8px 12px; margin-right: 10px; }
+  </style>
+</head>
+<body>
+
+<h3>Questions (từ Python gửi lên)</h3>
+<textarea id="questions"></textarea><br>
+<button onclick="copyText('questions')">Copy</button>
+                
+<h3>Answers (gửi lên Firebase)</h3>
+<textarea id="answers"></textarea><br>
+<button onclick="sendAnswers()">Send Answer</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAOE5nADwtvu6x9y-Ue6gqwMj0wb9-olWo",
+  authDomain: "exam-csr-eos.firebaseapp.com",
+  databaseURL: "https://exam-csr-eos-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "exam-csr-eos",
+  storageBucket: "exam-csr-eos.firebasestorage.app",
+  messagingSenderId: "167174925406",
+  appId: "1:167174925406:web:7e78604f7540dc757798cf",
+  measurementId: "G-JFQRYEC1R6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===== LOAD QUESTIONS =====
+const qRef = ref(db, "questions");
+onValue(qRef, (snapshot) => {
+  const data = snapshot.val();
+  if (!data) return;
+
+  const latest = Object.values(data).pop();
+  document.getElementById("questions").value = latest.content;
+});
+
+// ===== COPY =====
+window.copyText = function(id) {
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand("copy");
+};
+
+// ===== SEND ANSWERS =====
+window.sendAnswers = function() {
+  const text = document.getElementById("answers").value;
+
+  push(ref(db, "answers"), {
+    timestamp: new Date().toISOString(),
+    content: text
+  });
+
+  alert("Sent");
+};
+</script>
+
+</body>
+</html>
