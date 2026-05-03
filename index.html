@@ -1,22 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Exam Tool</title>
-<style>
-body { font-family: Arial; padding: 20px; }
-textarea { width: 100%; height: 150px; margin-bottom: 10px; }
-button { padding: 8px 12px; margin-right: 10px; cursor: pointer; }
-</style>
+  <meta charset="UTF-8">
+  <title>Exam Tool</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+    button { padding: 8px 12px; margin-right: 10px; }
+
+    #notify {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 6px 12px;
+      opacity: 0.8;
+      display: none;
+    }
+  </style>
 </head>
 <body>
 
-<h3>Questions</h3>
-<textarea id="questions"></textarea>
+<h3>Questions (từ Python gửi lên)</h3>
+<textarea id="questions"></textarea><br>
+<button onclick="copyText('questions')">Copy</button>
+                
+<h3>Answers (gửi lên Firebase)</h3>
+<textarea id="answers"></textarea><br>
+<button onclick="sendAnswers()">Send Answer</button>
 
-<h3>Answers</h3>
-<textarea id="answers"></textarea>
-<button id="sendBtn">Send</button>
+<h3>Latest Answers (từ Firebase)</h3>
+<textarea id="latestAnswers" readonly></textarea>
+
+<div id="notify">NEW QUESTION</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -35,57 +53,62 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ===== QUESTIONS REALTIME =====
-const qRef = ref(db, "questions");
-let lastQuestion = null;
+let lastQuestionTimestamp = null;
 
-onValue(qRef, (snap) => {
-  const data = snap.val();
+// ===== LOAD QUESTIONS + NOTIFY =====
+const qRef = ref(db, "questions");
+onValue(qRef, (snapshot) => {
+  const data = snapshot.val();
   if (!data) return;
 
   const latest = Object.values(data).pop();
-
   document.getElementById("questions").value = latest.content;
 
-  // notify chỉ khi có câu mới
-  if (lastQuestion !== latest.content) {
-    lastQuestion = latest.content;
-    alert("Có question mới");
+  if (lastQuestionTimestamp && lastQuestionTimestamp !== latest.timestamp) {
+    showNotify("NEW QUESTION");
   }
+
+  lastQuestionTimestamp = latest.timestamp;
 });
 
-// ===== ANSWERS REALTIME (reload vẫn giữ) =====
+// ===== LOAD LATEST ANSWERS =====
 const aRef = ref(db, "answers");
-
-onValue(aRef, (snap) => {
-  const data = snap.val();
+onValue(aRef, (snapshot) => {
+  const data = snapshot.val();
   if (!data) return;
 
   const latest = Object.values(data).pop();
-  document.getElementById("answers").value = latest.content;
+  document.getElementById("latestAnswers").value = latest.content;
 });
 
-// ===== SEND BUTTON FIX =====
-document.getElementById("sendBtn").addEventListener("click", sendAnswers);
+// ===== COPY =====
+window.copyText = function(id) {
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand("copy");
+};
 
-function sendAnswers() {
+// ===== SEND ANSWERS =====
+window.sendAnswers = function() {
   const text = document.getElementById("answers").value;
-
-  if (!text.trim()) {
-    console.log("Empty → skip");
-    return;
-  }
 
   push(ref(db, "answers"), {
     timestamp: new Date().toISOString(),
     content: text
-  })
-  .then(() => {
-    console.log("Send OK");
-  })
-  .catch((err) => {
-    console.error("Send error:", err);
   });
+
+  alert("Sent");
+};
+
+// ===== NOTIFY =====
+function showNotify(text) {
+  const el = document.getElementById("notify");
+  el.innerText = text;
+  el.style.display = "block";
+
+  setTimeout(() => {
+    el.style.display = "none";
+  }, 1000);
 }
 </script>
 
