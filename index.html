@@ -1,3 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Exam Tool</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+textarea { width: 100%; height: 150px; margin-bottom: 10px; }
+button { padding: 8px 12px; margin-right: 10px; }
+</style>
+</head>
+<body>
+
+<h3>Questions</h3>
+<textarea id="questions"></textarea>
+
+<h3>Answers</h3>
+<textarea id="answers"></textarea>
+<button onclick="sendAnswers()">Send</button>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
@@ -61,3 +81,6 @@ function sendAnswers() {
   });
 }
 </script>
+
+</body>
+</html>
